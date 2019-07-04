@@ -1,0 +1,57 @@
+<script>
+
+function add_image(_class) {
+    $.ajax({
+        url: "/images/" + _class + "_0",
+        type: "post",
+        dataType: "json",
+        data: "",
+
+        success: function(data) {
+            load_image(data.image[0]);
+            }
+    });
+}
+
+function load_image(value) {
+        console.log(value);
+        $("#image_outer .card-img-top").attr("src", "/images/" + String(value["class"]) + "_" + String(value["id"]));
+        image_div = $("#image_inner").clone().attr("id", value["class"]);
+
+        $("#image_div").append(image_div);
+}
+
+function load_images() {
+    $.ajax({
+        url: "/images/",
+        type: "get",
+        dataType: "json",
+        data: "",
+        
+        success: function(data) {
+            $.each(data.images, function(index, value) {
+                load_image(value);
+            });
+        }
+    });
+}
+
+function delete_image(image) {
+    var class_id = $(image).parent().parent().siblings().first().attr("src").split("/")[2];
+    
+    $.ajax({
+        url: "/images/" + class_id,
+        type: "delete",
+        
+        success: function(data) {
+            $(image).parent().parent().parent().remove();
+        }
+    });
+}
+
+
+$( document ).ready(function() {
+    load_images();
+})
+
+</script>
