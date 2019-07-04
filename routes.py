@@ -30,12 +30,12 @@ class ImageFactory:
 
         return image
 
-@app.route("/images/", methods=["GET"])
+@app.route("/images/", methods=["GET", "DELETE"])
 def all_images():
     if request.method == "GET":
         image_list = StoredImages.get_image_list_from_directory(SAVE_PATH)
 
-        return json.dumps({"images": [{"class":image._class, "id":image._id}] for image in image_list})
+        return json.dumps({"images": [{"class":image._class, "id":image._id} for image in image_list]})
 
 @app.route("/images/<class_id>", methods=["POST", "GET", "DELETE"])
 def images(class_id):
@@ -54,6 +54,7 @@ def images(class_id):
 
     elif request.method == "DELETE":
         if _class == "ALL":
+            print("ERJEJRIERIJE")
             StoredImages.delete_all(SAVE_PATH)
         else:
             StoredImages.remove_image(SAVE_PATH, _class, _id)

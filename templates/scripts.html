@@ -1,5 +1,18 @@
 <script>
 
+function reset() {
+	$.ajax({
+		url: "/images/" + "ALL" + "_" + "666",
+		type: "delete",
+		
+		success: function() {
+			$(".created_image").each( function() {
+				this.remove();
+			});
+		}
+	});
+}
+
 function add_image(_class) {
     $.ajax({
         url: "/images/" + _class + "_0",
@@ -17,6 +30,7 @@ function load_image(value) {
         console.log(value);
         $("#image_outer .card-img-top").attr("src", "/images/" + String(value["class"]) + "_" + String(value["id"]));
         image_div = $("#image_inner").clone().attr("id", value["class"]);
+	image_div = image_div.addClass("created_image");
 
         $("#image_div").append(image_div);
 }
@@ -29,7 +43,9 @@ function load_images() {
         data: "",
         
         success: function(data) {
+		console.log(data.images);
             $.each(data.images, function(index, value) {
+		console.log("TESTERERER");
                 load_image(value);
             });
         }
