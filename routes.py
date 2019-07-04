@@ -12,17 +12,15 @@ app = Flask(__name__)
 app.secret_key = "super secret key"
 SAVE_PATH = "./static/images/"
 
-def load_image_session():
-    if "images" not in session:
-        session["images"] = ""
-        stored_images = StoredImages(SAVE_PATH) 
-    else:
-        stored_images = StoredImages(SAVE_PATH, session["images"])
-
-    return stored_images
+def image_to_temp(image):
+    image_io = BytesIO()
+    image.save(image_io, "JPEG", quality=80)
+    image_io.seek(0)
+    return image_io
 
 class ImageFactory:
-    def __init__(self, _class):
+    @staticmethod
+    def create_image(_class):
         if _class == "class-1":
             image = Image.open("apple.jpeg").convert("RGB").resize((220,200))
         elif _class == "class-2":
@@ -30,47 +28,35 @@ class ImageFactory:
         elif _class == "class-3":
             image = Image.open("orange.jpeg").convert("RGB").resize((220,200))
 
-        self.image = image
+        return image
 
 @app.route("/images/", methods=["GET"])
 def all_images():
-    stored_images = load_image_session()
-    
-    session["images"] = ""
-
     if request.method == "GET":
-        stored_images = load_image_session()
-        image_list = stored_images.get_image_list()
+        image_list = StoredImages.get_image_list_from_directory(SAVE_PATH)
 
-        return json.dumps({"images": [{"class":image._class, "id":image.save_path.split("/")[-1].split(".")[0].split("_")[-1]} for image in image_list]})
+        return json.dumps({"images": [{"class":image._class, "id":image._id}] for image in image_list})
 
 @app.route("/images/<class_id>", methods=["POST", "GET", "DELETE"])
 def images(class_id):
     _class, _id = class_id.split("_")
-    stored_images = load_image_session()
 
     if request.method == "GET":
-        stored_images = load_image_session()
-        image_list = stored_images.get_image_list()
-        
-        image = load_image(_class, _id, SAVE_PATH)
+        image = StoredImages.load_image(SAVE_PATH, _class, _id).image
+        image = image_to_temp(image)
         return send_file(image, mimetype="image/jpeg")
 
     elif request.method == "POST":
-        factory = ImageFactory(_class)
-        image = factory.image 
+        image = ImageFactory.create_image(_class)
+        _id = StoredImages.add_image(image, SAVE_PATH, _class)
 
-        stored_images.add_image(image, _class)
-        session["images"] = str(stored_images)
-
-        return json.dumps({"image": [{"class":_class, "id":stored_images._id}]})
+        return json.dumps({"image": [{"class":_class, "id":_id}]})
 
     elif request.method == "DELETE":
         if _class == "ALL":
-            session["images"] = StoredImages(SAVE_PATH)
+            StoredImages.delete_all(SAVE_PATH)
         else:
-            stored_images.remove_image(_class, _id)
-            session["images"] = str(stored_images)
+            StoredImages.remove_image(SAVE_PATH, _class, _id)
 
         return "ok"
 
